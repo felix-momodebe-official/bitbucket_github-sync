@@ -1,45 +1,151 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# **Bitbucket to GitHub Sync via Bitbucket Pipelines**  
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+## **Overview**  
+This project automates the synchronization of a Bitbucket repository to GitHub using Bitbucket Pipelines. Any change in the Bitbucket repository will automatically trigger an update in the corresponding GitHub repository without manual intervention.  
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
-
----
-
-## Edit a file
-
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
-
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+## **Prerequisites**  
+Before starting, ensure you have:  
+- A Bitbucket repository with admin access  
+- A GitHub account with repository creation permissions  
+- SSH and Git installed on your local machine  
+- Basic knowledge of CI/CD pipelines  
 
 ---
 
-## Create a file
+## Project Visualization:
 
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
+![image](https://github.com/user-attachments/assets/eac00f6b-b4c9-45ab-8af0-c9c99c7589e1)
 
 ---
 
-## Clone a repository
 
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
+## **Step-by-Step Guide**  
 
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
+### **1. Configure Bitbucket**  
 
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+#### **1.1 Create an Access Token**  
+1. Navigate to **Repository settings** > **Security** > **Access Tokens**  
+2. Click on **Create Access Token**  
+3. Grant **Read** permissions to:  
+   - Repository  
+   - Webhooks  
+4. Copy and securely store the generated token.  
+
+#### **1.2 Enable Bitbucket Pipelines**  
+1. Go to **Repository settings** > **Pipelines**  
+2. Under **Settings**, toggle the button to enable Pipelines.  
+
+#### **1.3 Generate SSH Keys and Configure Known Hosts**  
+1. On your local machine, generate an SSH key pair:  
+
+2. Copy the public key from the console.
+
+---
+
+## 2. Add SSH Public
+2.1 Add SSH Public Key to Bitbucket
+Go to Repository settings > Security > Access Keys
+Click Add Key
+Paste the SSH public key
+Save the changes.
+
+2.2 1.5 Configure Repository Variables
+Navigate to Repository settings > Repository Variables
+
+Add the following variables:
+
+| Name	             | Value                         |
+| ------------------ | ----------------------------  |
+| BITBUCKET_VARIABLE |	(Access Token from Step 1.1) |
+| GITHUB_VARIABLE	   |  (GitHub Personal Access Token)|
+
+---
+
+## 3. Configure GitHub
+
+## 3.1 Create a New Empty Repository
+1. Go to GitHub
+2. Click on New Repository
+3. Do not initialize with a README file
+4. Copy the repository URL
+
+## 3.2 Add SSH Deploy Key
+1. Go to Settings > Security > Deploy Keys
+2. Click Add Key
+3. Paste the public SSH key generated in Bitbucket Step 1.3
+4. Check Allow write access
+5. Save the changes.
+   
+## 3.3 Generate a GitHub Personal Access Token (PAT)
+1. Go to GitHub Developer Settings
+2. Navigate to Personal Access Tokens > Generate New Token
+3. Grant the following permissions:
+- `repo` (Full control of repositories)
+- `workflow` (Trigger workflows)
+- `write:packages` (Push access for packages)
+4. Generate and securely store the PAT.
+
+---
+
+# 4. Configure Bitbucket Pipeline
+
+## 4.1 Create `bitbucket-pipelines.yml`
+In your Bitbucket repository, create a `.yml` file in the root directory:
+
+```
+yaml
+
+image: atlassian/default-image:latest
+
+pipelines:
+  default:
+    - step:
+        name: Sync to GitHub
+        script:
+          - apt-get update && apt-get install -y git
+          - git clone --mirror git@bitbucket.org:your-bitbucket-username/your-repo.git
+          - cd your-repo.git
+          - git remote add github https://your-github-username:${GITHUB_VARIABLE}@github.com/your-github-username/your-repo.git
+          - git push --mirror github
+```
+Replace:
+
+- `your-bitbucket-username/your-repo` with your actual Bitbucket repository name
+- `your-github-username/your-repo` with your actual GitHub repository name
+
+---
+
+# 5. Test the Pipeline
+1. Commit and push the bitbucket-pipelines.yml file to Bitbucket.
+2. Navigate to Bitbucket Repository > Pipelines
+3. Manually trigger the pipeline or push a change to test.
+4. Verify that the repository is correctly mirrored to GitHub.
+
+---
+
+# Troubleshooting
+
+## Issue: Pipeline Fails Due to SSH Key Permission Issues
+- ✅ Ensure the **public SSH key** is added to **GitHub Deploy Keys** with write access.
+- ✅ Check that **Bitbucket Access Keys** contains the correct key.
+
+## Issue: Git Push Fails Due to Authentication
+- ✅ Verify the GitHub Personal Access Token (PAT) has the correct permissions (`repo`, `workflow`, `write:packages`).
+- ✅ Ensure `GITHUB_VARIABLE` in Bitbucket contains the correct PAT value.
+
+## Issue: Pipeline Does Not Trigger on Changes
+- ✅ Confirm that **Bitbucket Pipelines** is enabled.
+- ✅ Ensure `.yml` syntax is correct in `bitbucket-pipelines.yml`.
+
+---
+
+# Conclusion
+By following this setup, any change in your **Bitbucket repository** will be automatically synced to **GitHub**, eliminating manual intervention. This process ensures your repositories remain consistent across platforms.
+
+## 🚀 Happy DevOps! 🚀
+
+---
+
+
+
+
