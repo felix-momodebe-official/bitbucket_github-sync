@@ -95,23 +95,22 @@ In your Bitbucket repository, create a `.yml` file in the root directory:
 ```
 yaml
 
-image: atlassian/default-image:latest
-
 pipelines:
-  default:
-    - step:
-        name: Sync to GitHub
-        script:
-          - apt-get update && apt-get install -y git
-          - git clone --mirror git@bitbucket.org:your-bitbucket-username/your-repo.git
-          - cd your-repo.git
-          - git remote add github https://your-github-username:${GITHUB_VARIABLE}@github.com/your-github-username/your-repo.git
-          - git push --mirror github
+    default:
+      - step:
+          name: Sync GitHub Mirror
+          image: alpine/git:latest
+          clone:
+            enabled: false
+          script:
+            - git clone --mirror https://x-token-auth:"$BITBUCKET_VARIABLE"@bitbucket.org/succpinnsolutions/ecommerce_app.git 
+            - cd ecommerce_app.git ## cd followed by your Github repository Name
+            - git push --mirror https://x-token-auth:"$GITHUB_VARIABLE"@github.com/felix-momodebe-official/bitbucket_github-sync.git 
 ```
 Replace:
 
-- `your-bitbucket-username/your-repo` with your actual Bitbucket repository name
-- `your-github-username/your-repo` with your actual GitHub repository name
+- `bitbucket.org/succpinnsolutions/ecommerce_app.git` with your actual Bitbucket repository name
+- `github.com/felix-momodebe-official/bitbucket_github-sync.git` with your actual GitHub repository name
 
 ---
 
